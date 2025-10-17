@@ -1,12 +1,19 @@
-import prisma  from "@/lib/prisma"; // Using the recommended shared prisma instance
-import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+// NOTE: `Request` is a globally available type and doesn't need to be imported.
+
+// Define the type for the second argument explicitly for clarity.
+type RouteContext = {
+  params: {
+    websiteid: string;
+  };
+};
 
 export async function GET(
-  _request: NextRequest,
-  // The fix is here: Destructure params with the correct type
-  { params }: { params: { websiteid: string } }
+  _request: Request, // Using the standard `Request` type instead of `NextRequest`
+  context: RouteContext // Using the clearly defined type for the context object
 ) {
-  const { websiteid } = params;
+  const { websiteid } = context.params;
 
   if (!websiteid) {
     return NextResponse.json(
