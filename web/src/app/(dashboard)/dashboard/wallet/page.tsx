@@ -4,12 +4,35 @@
 import { useAuth } from "@/app/context/auth";
 import React, { useState, useEffect } from "react";
 
+// Based on your `prisma/schema.prisma` for the 'transactions' model
+interface Transaction {
+  transaction_id: number;
+  created_at: string;
+  transaction_type: 'impression_fee' | 'platform_fee' | 'viewer_bonus' | 'host_pay';
+  amount: string; // Prisma Decimal is serialized as a string
+  content_id: string | null;
+  from_wallet_id: string | null;
+  to_wallet_id: string | null;
+}
+
+// Type for the data structure coming from your API
+interface WalletApiResponse {
+  balance: string; // Prisma Decimal is serialized as a string
+  transactions: Transaction[];
+}
+
+// Type for the data structure used in the component's state
+interface WalletState {
+    balance: number;
+    transactions: Transaction[];
+}
+
 // This is the main page component for the /dashboard/wallet route.
 export default function WalletPage() {
   const { user, session, loading: isAuthLoading } = useAuth();
 
-  // State to hold the wallet data fetched from the API
-  const [walletData, setWalletData] = useState<{ balance: number; transactions: any[] }>({
+  // State to hold the wallet data, converted for display
+  const [walletData, setWalletData] = useState<WalletState>({
     balance: 0,
     transactions: [],
   });
@@ -25,18 +48,18 @@ export default function WalletPage() {
 
       try {
         setLoading(true);
-        // The API route uses server-side cookies, so the Authorization header is not needed.
         const response = await fetch('/api/dashboard/wallet');
 
         if (!response.ok) {
           throw new Error('Failed to fetch wallet data.');
         }
 
-        const data = await response.json();
-        // Convert balance to number right after fetching
+        const data: WalletApiResponse = await response.json();
+        
+        // Convert API data to the format needed for the state
         setWalletData({
-            ...data,
-            balance: parseFloat(data.balance)
+            balance: parseFloat(data.balance),
+            transactions: data.transactions
         });
         setError(null);
 
@@ -48,7 +71,25 @@ export default function WalletPage() {
     };
 
     fetchWalletData();
-  }, [session]); // This effect runs whenever the session changes.
+  }, [session]);
+
+  // Helper function to generate a human-readable description
+  const getTransactionDescription = (transaction: Transaction): string => {
+    switch (transaction.transaction_type) {
+        case 'impression_fee':
+            return `Fee for content impression`;
+        case 'platform_fee':
+            return `CredX platform fee`;
+        case 'viewer_bonus':
+            return `Bonus earned for viewing content`;
+        case 'host_pay':
+            return `Payment received for hosting content`;
+        default:
+            // This will help you catch any unhandled transaction types
+            return `Transaction: ${transaction.transaction_type}`;
+    }
+  };
+
 
   if (isAuthLoading) {
     return (
@@ -109,26 +150,33 @@ export default function WalletPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800 bg-black">
-                      {walletData.transactions && walletData.transactions.map((transaction) => (
-                        <tr key={transaction.transaction_id}>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">{new Date(transaction.created_at).toLocaleDateString()}</td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm">
-                            <span className={`rounded-full px-2 py-1 text-xs font-semibold leading-5 ${
-                                parseFloat(transaction.amount) > 0 ? "bg-green-900/50 text-green-300" : "bg-red-900/50 text-red-300"
-                              }`}
-                            >
-                              {transaction.transaction_type.replace('_', ' ').toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-white">{transaction.description || 'N/A'}</td>
-                          <td className={`whitespace-nowrap px-6 py-4 text-sm font-medium ${
-                              parseFloat(transaction.amount) > 0 ? "text-green-400" : "text-red-400"
+                      {walletData.transactions && walletData.transactions.map((transaction) => {
+                        const amount = parseFloat(transaction.amount);
+                        const isCredit = amount > 0;
+                        
+                        return (
+                            <tr key={transaction.transaction_id}>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">{new Date(transaction.created_at).toLocaleDateString()}</td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm">
+                                <span className={`rounded-full px-2 py-1 text-xs font-semibold leading-5 ${
+                                    isCredit ? "bg-green-900/50 text-green-300" : "bg-red-900/50 text-red-300"
+                                }`}
+                                >
+                                {transaction.transaction_type.replace('_', ' ').toUpperCase()}
+                                </span>
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-white">
+                                {getTransactionDescription(transaction)}
+                            </td>
+                            <td className={`whitespace-nowrap px-6 py-4 text-sm font-medium ${
+                                isCredit ? "text-green-400" : "text-red-400"
                             }`}
-                          >
-                            {parseFloat(transaction.amount) > 0 ? `+${parseFloat(transaction.amount).toFixed(2)}` : parseFloat(transaction.amount).toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
+                            >
+                                {isCredit ? `+${amount.toFixed(2)}` : amount.toFixed(2)}
+                            </td>
+                            </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
@@ -140,3 +188,4 @@ export default function WalletPage() {
     </main>
   );
 }
+
