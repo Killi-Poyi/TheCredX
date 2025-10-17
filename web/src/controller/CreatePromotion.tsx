@@ -1,5 +1,4 @@
 import prisma from "@/lib/prisma";
-import { promotion_status } from '@/generated/prisma';
 
 //  data needed to create a promotion
 type PromotionData = {
@@ -36,7 +35,7 @@ export async function createPromotion({
     data: {
       content_id: content_id,
       budget: budget, 
-      status: (status || 'active') as promotion_status,
+      status: (status || 'active'),
     },
   });
 
