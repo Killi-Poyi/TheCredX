@@ -1,44 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
-// VERCEL UPDATES: Import the shared Prisma client instance instead of creating a new one.
-import prisma from "@/lib/prisma";
+// import { NextRequest, NextResponse } from "next/server";
 
+// This is a minimal API route for debugging purposes.
+// It does not connect to the database.
+// Its only job is to prove that the file can be built and deployed by Vercel.
+import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { domain_name, rss_feed_url, owner_id } = body;
-
-    // VERCEL UPDATES: This now uses the single, cached Prisma client, which is safe for Vercel.
-    const response = await prisma.websites.create({
-      data: {
-        domain_name,
-        rss_feed_url,
-        owner_id,
-        verification_token_expires_at: new Date(
-          Date.now() + 365 * 24 * 60 * 60 * 1000
-        ), // 1 year from now
-      },
-    });
-
+    // We are not even reading the body, just returning a success message.
+    console.log("Debug POST request received.");
+    
     return NextResponse.json(
-      { verification_token: response.verification_token },
+      { message: "API route is working." },
       { status: 200 }
     );
+
   } catch (error: unknown) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code?: string }).code === "P2002"
-    ) {
-      // Prisma unique constraint failed
-      return NextResponse.json(
-        { message: "Website with this domain already exists." },
-        { status: 409 }
-      );
-    }
-    console.error("error while saving website to db: ", error);
+    console.error("This should not happen in the debug route:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Internal server error in debug route" },
       { status: 500 }
     );
   }
