@@ -7,9 +7,9 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { websiteid: string } } // Corrected line
+  { params }: { params: Promise<{ websiteid: string }> } // Corrected line
 ) {
-  const { websiteid } = params; // Now you have websiteid directly
+  const { websiteid } =await params; // Now you have websiteid directly
 
   if (!websiteid) {
     return NextResponse.json(
