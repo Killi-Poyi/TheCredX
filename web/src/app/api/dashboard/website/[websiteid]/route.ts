@@ -1,22 +1,37 @@
-import { PrismaClient } from "@prisma/client";
+import prisma  from "@/lib/prisma"; // Using the recommended shared prisma instance
 import { NextRequest, NextResponse } from "next/server";
 
-const prisma = new PrismaClient();
-
 export async function GET(
-  request: NextRequest,
-  context: { params: { websiteid: string } }
+  _request: NextRequest,
+  // The fix is here: Destructure params with the correct type
+  { params }: { params: { websiteid: string } }
 ) {
-  const { websiteid } = await context.params;
+  const { websiteid } = params;
 
-  //   get website's articles from supabase
-  const articles = await prisma.content_items.findMany({
-    take: 10,
-    where: { website_id: websiteid },
-  });
+  if (!websiteid) {
+    return NextResponse.json(
+      { message: "Website ID is required" },
+      { status: 400 }
+    );
+  }
 
-  return NextResponse.json({
-    message: articles,
-    status: 200,
-  });
+  try {
+    const articles = await prisma.content_items.findMany({
+      take: 10,
+      where: { website_id: websiteid },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    return NextResponse.json(articles, { status: 200 });
+  
+  } catch (error) {
+    console.error(`Failed to fetch articles for website ${websiteid}:`, error);
+    return NextResponse.json(
+      { message: "Something went wrong fetching articles" },
+      { status: 500 }
+    );
+  }
 }
+
