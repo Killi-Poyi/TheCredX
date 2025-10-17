@@ -31,13 +31,7 @@ export async function createPromotion({
   }
 
   //  Insert the new record into the 'promotions' table
-  const newPromotion = await prisma.promotions.create({
-    data: {
-      content_id: content_id,
-      budget: budget, 
-      status: (status || 'active'),
-    },
-  });
+  const newPromotion = null;
 
   return newPromotion;
 }
