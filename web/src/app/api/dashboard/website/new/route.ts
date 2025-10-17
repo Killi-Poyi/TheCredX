@@ -1,13 +1,13 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
+// VERCEL UPDATES: Import the shared Prisma client instance instead of creating a new one.
+import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { domain_name, rss_feed_url, owner_id } = body;
 
+    // VERCEL UPDATES: This now uses the single, cached Prisma client, which is safe for Vercel.
     const response = await prisma.websites.create({
       data: {
         domain_name,
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
           Date.now() + 365 * 24 * 60 * 60 * 1000
         ), // 1 year from now
       },
-    }); // returns complete record in map
+    });
 
     return NextResponse.json(
       { verification_token: response.verification_token },
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    console.log("error while saving website to db: ", error);
+    console.error("error while saving website to db: ", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

@@ -1,5 +1,5 @@
 
-import { PrismaClient } from '@/generated/prisma'; // <-- The blueprint is needed here
+import { PrismaClient } from '@prisma/client'; // <-- The blueprint is needed here
 
 
 
