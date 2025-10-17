@@ -2,7 +2,7 @@
   
   
   
-  const API_BASE_URL = 'http://localhost:3000';
+  const API_BASE_URL = 'https://thecredx.vercel.app';
 
   // Find the container element on the host's page
   const widgetContainer = document.getElementById('CREDX');
@@ -22,7 +22,6 @@
     console.error("AI Widget: Verification meta tag is missing the 'content' attribute.");
     return;
   }
-
   // Visitor ID Management 
   function getOrSetVisitorId() {
     const cookieName = 'credx_visitor_id=';
@@ -45,6 +44,7 @@
   async function fetchRecommendation() {
     try {
       //CALL THIS FUNCTION TO GET VIS_ID FROM THE COOKIE. TEMPORARILY USING MOCK DATA getOrSetVisitorId();
+      // const userId = getOrSetVisitorId()
       const userId = '01c1486c-9eb5-4ed9-aa06-2022e2c6e3ed'
 
       const response = await fetch(`${API_BASE_URL}/api/widget`, {
@@ -81,69 +81,23 @@
     
     const widgetHTML = `
       <style>
-        /* Using the same modern, dark theme styles */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        .credx-card {
-          font-family: 'Inter', sans-serif;
-          background: #111;
-          border: 1px solid #333;
-          border-radius: 12px;
-          overflow: hidden;
-          color: #e5e7eb;
-          text-decoration: none;
-          display: block;
-          max-width: 350px;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .credx-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
-        }
-        .credx-image-container {
-          width: 100%;
-          padding-top: 56.25%; /* 16:9 Aspect Ratio */
-          position: relative;
-          background-color: #222;
-        }
-        .credx-image {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
+        .credx-card { font-family: 'Inter', sans-serif; background: #111; border: 1px solid #333; border-radius: 12px; overflow: hidden; color: #e5e7eb; text-decoration: none; display: block; max-width: 350px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .credx-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
+        .credx-image-container { width: 100%; padding-top: 56.25%; position: relative; background-color: #222; }
+        .credx-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .credx-content { padding: 20px; }
-        .credx-title {
-          font-size: 1.125rem;
-          font-weight: 600;
-          margin: 0 0 8px 0;
-          color: #f9fafb;
-        }
-        .credx-description {
-          font-size: 0.875rem;
-          color: #9ca3af;
-          margin: 0;
-        }
-        .credx-footer {
-          font-size: 0.75rem;
-          color: #6b7280;
-          padding: 12px 20px;
-          border-top: 1px solid #333;
-        }
+        .credx-title { font-size: 1.125rem; font-weight: 600; margin: 0 0 8px 0; color: #f9fafb; }
+        .credx-description { font-size: 0.875rem; color: #9ca3af; margin: 0; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .credx-footer { font-size: 0.75rem; color: #6b7280; padding: 12px 20px; border-top: 1px solid #333; }
       </style>
       <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="credx-card">
-        <div class="credx-image-container">
-          <img src="${article.image}" alt="${article.title}" class="credx-image">
-        </div>
+        <div class="credx-image-container"><img src="${article.image}" alt="${article.title}" class="credx-image"></div>
         <div class="credx-content">
           <h3 class="credx-title">${article.title}</h3>
           <p class="credx-description">${article.description}</p>
         </div>
-        <div class="credx-footer">
-          <span>Recommended for You</span>
-        </div>
+        <div class="credx-footer"><span>Recommended for You</span></div>
       </a>
     `;
     shadowRoot.innerHTML = widgetHTML;
