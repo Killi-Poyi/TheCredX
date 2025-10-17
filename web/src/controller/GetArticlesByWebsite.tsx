@@ -12,7 +12,7 @@ type ArticleWithPromotions = {
 type PromotionData = {
     article_id: string;
     active: boolean | null;
-    budget: any; // Decimal type from Prisma
+    budget: number; // Decimal type from Prisma
 };
 
 type ContentItemData = {
