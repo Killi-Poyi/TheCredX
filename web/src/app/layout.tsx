@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/app/context/auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/navbar";
+import Link from 'next/link'; // Import the Link component
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,28 +58,28 @@ export default async function RootLayout({
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
                       <li>
-                        <a
+                        <Link
                           href="/about"
                           className="hover:text-primary transition-colors"
                         >
                           About Us
-                        </a>
+                        </Link>
                       </li>
                       <li>
-                        <a
+                        <Link
                           href="/careers"
                           className="hover:text-primary transition-colors"
                         >
                           Careers
-                        </a>
+                        </Link>
                       </li>
                       <li>
-                        <a
+                        <Link
                           href="/contact"
                           className="hover:text-primary transition-colors"
                         >
                           Contact
-                        </a>
+                        </Link>
                       </li>
                     </ul>
                   </div>
@@ -88,20 +89,20 @@ export default async function RootLayout({
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
                       <li>
-                        <a
+                        <Link
                           href="/help"
                           className="hover:text-primary transition-colors"
                         >
                           Help Center
-                        </a>
+                        </Link>
                       </li>
                       <li>
-                        <a
+                        <Link
                           href="#"
                           className="hover:text-primary transition-colors"
                         >
                           API Docs
-                        </a>
+                        </Link>
                       </li>
                     </ul>
                   </div>
@@ -110,7 +111,7 @@ export default async function RootLayout({
                       Follow Us
                     </h4>
                     <div className="flex space-x-4">
-                      {/* github */}
+                      {/* External links correctly use <a> tags */}
                       <a
                         href="https://github.com/vedantjain8"
                         target="_blank"
