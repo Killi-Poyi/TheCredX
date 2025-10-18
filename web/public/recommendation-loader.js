@@ -2,7 +2,7 @@
   
   
   
-  const API_BASE_URL = 'https://thecredx.vercel.app';
+  const API_BASE_URL = 'https://the-cred-x-gamma.vercel.app';
 
   // Find the container element on the host's page
   const widgetContainer = document.getElementById('CREDX');
@@ -66,12 +66,12 @@
       if (article) {
         renderWidget(article);
       } else {
-        widgetContainer.style.display = error;
+        widgetContainer.style.display = 'none';
       }
 
     } catch (error) {
       console.error('AI Widget: Failed to fetch recommendation:', error);
-      widgetContainer.style.display = error; 
+      widgetContainer.style.display = 'none'; 
     }
   }
 
