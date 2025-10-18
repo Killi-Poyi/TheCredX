@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { verificationToken, userId } = requestBody;
 
     // Check for required inputs
-    if (!origin || !verificationToken || !userId) {
+    if ( !verificationToken || !userId) {
       return NextResponse.json({ error: 'Missing verificationToken, userId, or origin header' }, { status: 400 });
     }
 
