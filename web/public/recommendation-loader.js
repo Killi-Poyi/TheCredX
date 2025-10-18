@@ -45,12 +45,15 @@
     try {
       //CALL THIS FUNCTION TO GET VIS_ID FROM THE COOKIE. TEMPORARILY USING MOCK DATA getOrSetVisitorId();
       // const userId = getOrSetVisitorId()
-      const VisitorId = '01c1486c-9eb5-4ed9-aa06-2022e2c6e3ed'
+      const userId = '01c1486c-9eb5-4ed9-aa06-2022e2c6e3ed'
+      
+      console.log("Widget Check: Token is:", verificationToken);
+      console.log("Widget Check: User ID is:", userId);
 
       const response = await fetch(`${API_BASE_URL}/api/widget`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verificationToken, VisitorId })
+        body: JSON.stringify({ verificationToken, userId })
       });
 
       if (response.status === 204) { 
