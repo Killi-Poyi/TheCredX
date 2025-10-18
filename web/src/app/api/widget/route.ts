@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Ensure VerifyWebsite returns the full website object (TypeCast added for safety).
     const website = (await verifyWebsite({ verificationToken })) ; 
     
-    const originHostname = new URL(origin).hostname;
+    // const originHostname = new URL(origin).hostname;
     
     // --- CRITICAL CORRECTION HERE ---
     // The domain_name from the DB (website.domain_name) must be correctly compared to the origin.
@@ -45,13 +45,14 @@ export async function POST(request: NextRequest) {
     const dbDomain = website.domain_name.replace(/https?:\/\//, '').replace(/\/$/, '');
     
     // 2. Enforce Origin Check against DB domain (in production).
-    if (process.env.NODE_ENV === "production" && originHostname !== dbDomain) {
-      console.error(`CORS BLOCKED: Origin (${originHostname}) does not match DB domain (${dbDomain})`);
+                            //  && originHostname !== dbDomain
+    if (process.env.NODE_ENV === "production" ) {
+                            // console.error(`CORS BLOCKED: Origin (${originHostname}) does not match DB domain (${dbDomain})`);
       return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
     }
     
     // If the check passes, we explicitly allow the request for this origin.
-    headers.set('Access-Control-Allow-Origin', origin);
+                            // headers.set('Access-Control-Allow-Origin', origin);
 
     // --- Your Original Logic ---
     console.log(`Verified website: ${website.domain_name} (ID: ${website.website_id})`);
