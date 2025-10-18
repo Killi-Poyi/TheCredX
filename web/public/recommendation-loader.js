@@ -71,7 +71,8 @@
 
     } catch (error) {
       console.error('AI Widget: Failed to fetch recommendation:', error);
-      widgetContainer.style.display = 'none'; 
+      // widgetContainer.style.display = 'none'; 
+      widgetContainer.innerHTML = '<div>⚠️ Could not load recommendations.</div>';
     }
   }
 
