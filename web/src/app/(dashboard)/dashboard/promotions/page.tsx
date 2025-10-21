@@ -1,73 +1,148 @@
-// app/dashboard/promotions/page.tsx
 "use client";
 
 import { useAuth } from "@/app/context/auth";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// Define the shape of our data with TypeScript types
+// --- TYPE DEFINITIONS ---
 type Website = {
   website_id: string;
   domain_name: string;
-  status: string;
+};
+
+type Promotion = {
+  status: "active" | "completed" | "inactive" | "processing";
+  budget: string;
+  credits_spent: string;
 };
 
 type Article = {
-  id: string;
+  content_id: string;
   title: string;
-  promotions: {
-    status: "active" | "completed" | "inactive";
-    budget: string;
-    credits_spent: string;
-  }[];
+  promotions: Promotion[];
 };
 
 type ArticlesByWebsite = {
   [key: string]: Article[];
 };
 
+// --- COMPONENT ---
 export default function PromotionsPage() {
-  const { user, session, loading: isAuthLoading } = useAuth();
+  const { user, loading, session } = useAuth();
+  const router = useRouter();
+
+  // --- State Management ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedContent, setSelectedContent] = useState<Article | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(
     null
   );
-
   const [websites, setWebsites] = useState<Website[]>([]);
   const [articles, setArticles] = useState<ArticlesByWebsite>({});
-
-  const [loadingWebsites, setLoadingWebsites] = useState(true);
-  const [loadingArticles, setLoadingArticles] = useState(false);
+  const [isLoading, setIsLoading] = useState({
+    auth: true, // Initial auth check
+    websites: false,
+    articles: false,
+    submission: false,
+  });
   const [error, setError] = useState<string | null>(null);
 
-  const fetchArticlesForWebsite = async (websiteId: string) => {
-    try {
-      setLoadingArticles(true);
+  // --- Authentication Hook ---
+  useEffect(() => {
+    console.log("[Auth] Checking auth status...", { loading, user });
+    if (!loading && !user) {
+      console.log("[Auth] User not found, redirecting to /login");
+      router.push("/login");
+    }
+    if (!loading) {
+      console.log("[Auth] Auth check complete.");
+      setIsLoading((prev) => ({ ...prev, auth: false }));
+    }
+  }, [user, loading, router]);
 
+  // --- Data Fetching ---
+  const fetchArticlesForWebsite = async (websiteId: string) => {
+    console.log(`[Fetch Articles] Fetching for websiteId: ${websiteId}`);
+    setIsLoading((prev) => ({ ...prev, articles: true }));
+    try {
       const response = await fetch(
-        `/api/dashboard/articles?websiteId=${websiteId}`,
-        {}
+        `/api/dashboard/articles?websiteId=${websiteId}`
       );
-      if (!response.ok) throw new Error("Failed to fetch articles.");
+      if (!response.ok) {
+        throw new Error("Failed to fetch articles.");
+      }
       const data = await response.json();
+
+      // --- 👇 NEW EASY-TO-READ LOG ---
+      console.log(`--- 2. ARTICLES DATA RECEIVED for website ${websiteId} ---`);
+      console.log(
+        "Look at the 'id' column in the table below. Are any IDs duplicated or missing (null)?"
+      );
+      console.table(data);
+      // --- 👆 END OF NEW LOG ---
+
       setArticles((prev) => ({ ...prev, [websiteId]: data }));
     } catch (err) {
-      setError(
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "An error occurred fetching articles"
-      );
+          : "An error occurred fetching articles";
+      console.error("[Fetch Articles] Error:", errorMessage);
+      setError(errorMessage);
     } finally {
-      setLoadingArticles(false);
+      setIsLoading((prev) => ({ ...prev, articles: false }));
     }
   };
 
+  useEffect(() => {
+    const fetchWebsites = async () => {
+      if (!session) {
+        console.log("[Fetch Websites] No session, skipping fetch.");
+        setIsLoading((prev) => ({ ...prev, websites: false }));
+        return;
+      }
+      console.log("[Fetch Websites] Fetching websites...");
+      setIsLoading((prev) => ({ ...prev, websites: true }));
+      try {
+        const response = await fetch("/api/websites");
+        if (!response.ok) {
+          throw new Error("Failed to fetch websites.");
+        }
+        const data = await response.json();
+
+        // --- 👇 NEW EASY-TO-READ LOG ---
+        console.log("--- 1. WEBSITES DATA RECEIVED ---");
+        console.log(
+          "Look at the 'website_id' column in the table below. Are any IDs duplicated or missing (null)?"
+        );
+        console.table(data);
+        // --- 👆 END OF NEW LOG ---
+
+        setWebsites(data);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred";
+        console.error("[Fetch Websites] Error:", errorMessage);
+        setError(errorMessage);
+      } finally {
+        setIsLoading((prev) => ({ ...prev, websites: false }));
+      }
+    };
+
+    if (user) {
+      console.log("[Auth] User exists, attempting to fetch websites.");
+      fetchWebsites();
+    }
+  }, [session, user]);
+
+  // --- Event Handlers ---
   const handleWebsiteSelect = (websiteId: string) => {
     const newSelectedId = selectedWebsiteId === websiteId ? null : websiteId;
+    console.log(`[Event] Website selected. ID: ${newSelectedId}`);
     setSelectedWebsiteId(newSelectedId);
 
-    // Fetch articles only if a new website is selected and we don't have its data yet
     if (newSelectedId && !articles[newSelectedId]) {
+      console.log(`[Event] No local articles for ${newSelectedId}, fetching...`);
       fetchArticlesForWebsite(newSelectedId);
     }
   };
@@ -76,80 +151,79 @@ export default function PromotionsPage() {
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
-    if (!selectedContent || !selectedWebsiteId) return;
+    if (!selectedArticle || !selectedWebsiteId) {
+      console.error("[Submit] Missing article or websiteId.");
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
     const budget = formData.get("budget");
+    const payload = {
+      content_id: selectedArticle.content_id,
+      budget: Number(budget),
+    };
+
+    console.log("[Submit] Starting promotion with payload:", payload);
+    setIsLoading((prev) => ({ ...prev, submission: true }));
+    setError(null);
 
     try {
       const response = await fetch("/api/dashboard/promotions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content_id: selectedContent.id,
-          budget: Number(budget),
-          status: "active",
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create promotion.");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to start promotion process.");
       }
 
-      await fetchArticlesForWebsite(selectedWebsiteId);
-    } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "An unknown error occurred.");
-    } finally {
+      console.log("[Submit] Promotion job created successfully.");
+
       handleCloseModal();
+      console.log("[Submit] Modal closed, refreshing articles list...");
+      await fetchArticlesForWebsite(selectedWebsiteId);
+      console.log("[Submit] Articles list refreshed.");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred.";
+      console.error("[Submit] Error:", errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, submission: false }));
     }
   };
 
-  // Effect to fetch the list of websites on page load
-  useEffect(() => {
-    const fetchWebsites = async () => {
-      if (!session) {
-        setLoadingWebsites(false);
-        return;
-      }
-      try {
-        setLoadingWebsites(true);
-        const response = await fetch("/api/websites");
-        if (!response.ok) throw new Error("Failed to fetch websites.");
-        const data = await response.json();
-        setWebsites(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoadingWebsites(false);
-      }
-    };
-    fetchWebsites();
-  }, [session]);
-
-  const handlePromoteClick = (content: Article) => {
-    console.log("Article selected for promotion:", content);
-    setSelectedContent(content);
+  const handlePromoteClick = (article: Article) => {
+    console.log(
+      "[Event] 'Promote' clicked. Article (content_id):",
+      article.content_id
+    );
+    setSelectedArticle(article);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
+    console.log("[Event] Closing modal.");
     setIsModalOpen(false);
-    setSelectedContent(null);
+    setSelectedArticle(null);
   };
 
-  if (isAuthLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
-        <p>Loading user data...</p>
-      </div>
-    );
-  }
+  // --- Render Logic ---
+  console.log("[Render] Component rendering with state:", {
+    isLoading,
+    user: !!user,
+    error,
+    selectedWebsiteId,
+    // Note: Logging full 'websites' and 'articles' here is too noisy,
+    // the console.table() logs are better.
+  });
 
-  if (!user) {
+  if (isLoading.auth || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
-        <p>Please log in to view promotions.</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -163,19 +237,19 @@ export default function PromotionsPage() {
         </p>
 
         <div className="mt-8 space-y-4">
-          {loadingWebsites && (
+          {isLoading.websites && (
             <p className="text-muted-foreground">Loading websites...</p>
           )}
           {error && <p className="text-destructive">{error}</p>}
-          {!loadingWebsites && !error && websites.length === 0 && (
+          {!isLoading.websites && !error && websites.length === 0 && (
             <p className="text-destructive">NO WEBSITES</p>
           )}
 
-          {!loadingWebsites &&
+          {!isLoading.websites &&
             !error &&
             websites.map((website) => (
               <div
-                key={website.website_id}
+                key={website.website_id} // This key MUST be unique
                 className="overflow-hidden rounded-lg bg-background border border-border"
               >
                 <button
@@ -198,12 +272,12 @@ export default function PromotionsPage() {
 
                 {selectedWebsiteId === website.website_id && (
                   <div className="border-t border-border">
-                    {loadingArticles && (
+                    {isLoading.articles && (
                       <p className="p-4 text-muted-foreground">
                         Loading articles...
                       </p>
                     )}
-                    {!loadingArticles && (
+                    {!isLoading.articles && (
                       <table className="min-w-full divide-y divide-border">
                         <thead className="bg-muted">
                           <tr>
@@ -231,7 +305,8 @@ export default function PromotionsPage() {
                               : "0";
 
                             return (
-                              <tr key={item.id}>
+                              <tr key={item.content_id}>
+                                {/* This key MUST be unique */}
                                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground">
                                   {item.title}
                                 </td>
@@ -242,6 +317,8 @@ export default function PromotionsPage() {
                                         ? "bg-primary/20 text-primary"
                                         : status === "completed"
                                         ? "bg-muted text-muted-foreground"
+                                        : status === "processing"
+                                        ? "bg-blue-900/50 text-blue-300" // Style for processing
                                         : "bg-accent/20 text-accent-foreground"
                                     }`}
                                   >
@@ -284,7 +361,7 @@ export default function PromotionsPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               You are promoting:{" "}
               <span className="font-semibold text-foreground">
-                {selectedContent?.title}
+                {selectedArticle?.title}
               </span>
             </p>
             <form onSubmit={handlePromotionSubmit} className="mt-4">
@@ -307,6 +384,9 @@ export default function PromotionsPage() {
                   />
                 </div>
               </div>
+              {error && (
+                <p className="mt-2 text-sm text-destructive">{error}</p>
+              )}
               <div className="mt-6 flex justify-end space-x-4">
                 <button
                   type="button"
@@ -317,9 +397,10 @@ export default function PromotionsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+                  disabled={isLoading.submission}
+                  className="rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
                 >
-                  Start Promotion
+                  {isLoading.submission ? "Processing..." : "Start Promotion"}
                 </button>
               </div>
             </form>

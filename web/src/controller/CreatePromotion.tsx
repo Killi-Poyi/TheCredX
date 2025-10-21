@@ -1,78 +1,55 @@
-import prisma from "@/lib/prisma"; // Corrected: Use default import for prisma
-import { Prisma } from '@prisma/client'; // Keep this for Prisma helper types
-
-// Define a custom type that matches the structure of the 'promotions' table.
-// This avoids the import issue for the 'promotions' type and provides strong type safety.
-type Promotion = {
-  id: number;
-  article_id: string;
-  title: string;
-  summary: string;
-  tags: string[];
-  categories: string;
-  promoter_id: string;
-  budget: string;
-  remaining_impressions: number | null;
-  boost: string | null;
-  embedding: null; // This field is unsupported, so we use 'any'.
-  active: boolean | null;
-  created_at: Date | null;
-  updated_at: Date | null;
-};
-
-// Define the shape of the data needed to create a promotion.
-type PromotionData = {
-  content_id: string;
-  budget: number;
-  status: 'active' | 'inactive';
-  owner_id: string;
-};
+import prisma from "@/lib/prisma";
 
 /**
- * Creates a new promotion using a raw SQL query to handle the 'vector' type.
- * @param {PromotionData} data - The necessary data to create the promotion.
- * @returns {Promise<Promotion>} The newly created promotion record.
- * @throws {Error} If the user does not own the content item.
+ * Creates a new promotion "job" in the database.
+ * This function contains all the core business logic for starting a promotion.
  */
-export async function createPromotion({
-  content_id,
-  budget,
-  status,
-  owner_id,
-}: PromotionData): Promise<Promotion> {
-  // --- Security Check ---
+// This is a NAMED EXPORT, which allows the API route to import it correctly.
+export async function createPromotion(
+    content_id: string, 
+    user_id: string, 
+    budget: number,
+    title: string
+    
+) {
+  // 1. Perform a security check to ensure the user owns the content item.
+  // We also select all the fields needed to create the initial promotion record.
   const contentItem = await prisma.content_items.findFirst({
     where: {
       content_id: content_id,
       websites: {
-        owner_id: owner_id,
+        owner_id: user_id,
       },
     },
+    select: { 
+      title: true,
+      description: true,
+      tags: true,
+      category: true,
+    }
   });
 
+  // If the content item doesn't exist or isn't owned by the user, throw an error.
   if (!contentItem) {
-    throw new Error("Forbidden: You do not own this content or it does not exist.");
+    throw new Error("Forbidden: You do not have permission to promote this article.");
   }
-
-  // --- Create Promotion with Raw SQL Query ---
-  // The result of the raw query is now correctly typed with our custom 'Promotion' type.
-  const newPromotions: Promotion[] = await prisma.$queryRaw<Promotion[]>`
-    INSERT INTO "public"."promotions" (
-      "article_id", "title", "summary", "tags", "categories", 
-      "promoter_id", "budget", "active", "embedding"
-    ) VALUES (
-      ${content_id}::uuid, ${contentItem.title}, ${contentItem.description || "No summary available."}, 
-      ${contentItem.tags}, ${contentItem.category || "uncategorized"}, ${owner_id}::uuid, 
-      ${budget}, ${status === 'active'}, NULL
-    )
-    RETURNING *;
+// 2. Create the new promotion "job" using a raw SQL query.
+// This is necessary because of the Unsupported("vector") type in the promotions model.
+const newPromotionJob = await prisma.$queryRaw<any[]>`
+    INSERT INTO "public"."promotions" 
+      (article_id, budget, title, summary, active)
+    VALUES 
+      (${content_id}::uuid, 
+       ${budget},
+       ${title},  
+       'Your promotion is being processed. Summary and details will appear soon.', -- <-- Default summary
+       ${false}  -- Set active to false, the worker will set it to true
+      )
+    RETURNING id;
   `;
-  ;
 
-  if (newPromotions.length === 0) {
-    throw new Error("Failed to create promotion.");
-  }
-
-  return newPromotions[0];
+  // 3. Return the newly created promotion record.
+  // $queryRaw returns an array, so we return the first (and only) result.
+  return newPromotionJob[0];
 }
 
