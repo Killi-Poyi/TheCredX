@@ -1,1 +1,10 @@
 .env*
+
+**/__pycache__
+**/nltk_data
+**/sentence-t5-base-local
+**/*.pkl
+
+articles
+
+classifier/model_bundle.pkl
