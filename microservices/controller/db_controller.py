@@ -54,11 +54,12 @@ def make_connection():
         
         if not database_url:
             logger.error("DATABASE_URL environment variable not set.")
-            return None     
+            return None    
+        database_url_cleaned = database_url.split("?")[0] 
 
         logger.info("Attempting to connect to the database using DATABASE_URL...")
         
-        conn = psycopg2.connect(database_url) 
+        conn = psycopg2.connect(database_url_cleaned) 
         logger.info("Database connection successful!")
         return conn
         
