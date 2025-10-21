@@ -5,6 +5,11 @@ import prisma from "@/lib/prisma";
  * This function contains all the core business logic for starting a promotion.
  */
 // This is a NAMED EXPORT, which allows the API route to import it correctly.
+
+type PromotionData = {
+  id: number;
+};
+
 export async function createPromotion(
     content_id: string, 
     user_id: string, 
@@ -35,7 +40,10 @@ export async function createPromotion(
   }
 // 2. Create the new promotion "job" using a raw SQL query.
 // This is necessary because of the Unsupported("vector") type in the promotions model.
-const newPromotionJob = await prisma.$queryRaw<any[]>`
+
+
+//(*****************************************************************************************)
+const newPromotionJob : PromotionData [] = await prisma.$queryRaw<any[]>`
     INSERT INTO "public"."promotions" 
       (article_id, budget, title, summary, active)
     VALUES 
@@ -47,6 +55,7 @@ const newPromotionJob = await prisma.$queryRaw<any[]>`
       )
     RETURNING id;
   `;
+//(**************************************************************************************************)
 
   // 3. Return the newly created promotion record.
   // $queryRaw returns an array, so we return the first (and only) result.
