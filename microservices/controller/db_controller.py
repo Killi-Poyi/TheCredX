@@ -1,3 +1,4 @@
+import psycopg2
 from psycopg2 import connect
 from dotenv import load_dotenv
 import logging
