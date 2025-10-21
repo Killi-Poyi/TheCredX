@@ -43,7 +43,7 @@ export async function createPromotion(
 
 
 //(*****************************************************************************************)
-const newPromotionJob : PromotionData [] = await prisma.$queryRaw<any[]>`
+const newPromotionJob : PromotionData [] = await prisma.$queryRaw<PromotionData[]>`
     INSERT INTO "public"."promotions" 
       (article_id, budget, title, summary, active)
     VALUES 
