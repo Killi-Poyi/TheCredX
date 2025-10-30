@@ -1,8 +1,8 @@
-import psycopg2
-from psycopg2 import connect
-from dotenv import load_dotenv
 import logging
 import os
+
+from dotenv import load_dotenv
+from psycopg2 import connect
 
 # Load environment variables from .env
 load_dotenv()
@@ -17,55 +17,25 @@ DBNAME = os.getenv("DB_NAME")
 logger = logging.getLogger(__name__)
 
 
-# def make_connection():
-
-#     """
-#     Connect to the PostgreSQL database using credentials from environment variables.
-#     Returns the connection object if successful, else raises an exception.
-#     """
-#     # Connect to the database
-#     try:
-        
-#         connection = connect(
-#             user=USER,
-#             password=PASSWORD,
-#             host=HOST,
-#             port=PORT,
-#             dbname=DBNAME
-#         )
-        
-#         logger.info("Connection successful!")
-#         return connection
-#     except Exception as e:
-#         logger.error(f"Failed to connect: {e}")
-#         return None
-
 def make_connection():
     """
-    Connect to the PostgreSQL database using the DATABASE_URL environment variable.
-    Returns the connection object if successful, else returns None.
+    Connect to the PostgreSQL database using credentials from environment variables.
+    Returns the connection object if successful, else raises an exception.
     """
-    conn = None
+    # Connect to the database
     try:
-        # --- THIS IS THE FIX ---
-        # Get the full connection string from the ONE environment variable
-        # provided by GitHub Actions (and also defined in your .env for local use)
-        database_url = os.environ.get('DATABASE_URL') 
-        
-        if not database_url:
-            logger.error("DATABASE_URL environment variable not set.")
-            return None    
-        database_url_cleaned = database_url.split("?")[0] 
-
-        logger.info("Attempting to connect to the database using DATABASE_URL...")
-        
-        conn = psycopg2.connect(database_url_cleaned) 
-        logger.info("Database connection successful!")
-        return conn
-        
+        connection = connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME
+        )
+        logger.info("Connection successful!")
+        return connection
     except Exception as e:
         logger.error(f"Failed to connect: {e}")
-        return None 
+        return None
 
 
 def close_connection(connection):
@@ -77,7 +47,7 @@ def close_connection(connection):
         logger.info("Connection closed.")
 
 
-def execute_query(cursor, query, params, fetch=False) -> int:
+def execute_query(cursor, query, params, fetch=False) -> int|set:
     """
     Executes a given SQL query using the provided database cursor.
 
@@ -88,7 +58,7 @@ def execute_query(cursor, query, params, fetch=False) -> int:
         fetch (bool, optional): If True, fetches and returns a single result from the query. Defaults to False.
 
     Returns:
-        int or Any:
+        int or set:
             - If fetch is False: Returns 200 on success, 500 on failure.
             - If fetch is True: Returns the fetched result on success, 500 on failure.
 
@@ -100,7 +70,7 @@ def execute_query(cursor, query, params, fetch=False) -> int:
         if params:
             cursor.execute(query, params)
             if fetch:
-                result = cursor.fetchone()
+                result = cursor.fetchall()
                 return result
         else:
             cursor.execute(query)

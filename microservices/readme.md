@@ -38,10 +38,10 @@ This directory contains microservices for article classification, scraping, and 
 
 - **Embeddings**: Uses [SentenceTransformer](https://www.sbert.net/) for document embeddings (pretrained, not retrained).
 - **Classifier**: SGDClassifier (logistic regression, supports online/incremental learning).
-- **Pipeline**:  
-  1. Chunk article (split into paragraphs)  
-  2. Embed each chunk  
-  3. Average embeddings for document representation  
+- **Pipeline**:
+  1. Chunk article (split into paragraphs)
+  2. Embed each chunk
+  3. Average embeddings for document representation
   4. Classify with SGDClassifier
 
 ### Training Example Output

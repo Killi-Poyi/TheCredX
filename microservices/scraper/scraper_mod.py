@@ -4,17 +4,19 @@ scraper_mod.py
 Provides the ScraperMod class for robustly scraping, cleaning, and uploading a single article.
 """
 
-from dotenv import load_dotenv
-from typing import Optional
-import os
-import requests
-from bs4 import BeautifulSoup, FeatureNotFound
-from requests.adapters import HTTPAdapter
 import hashlib
-from urllib3.util.retry import Retry
-import boto3
-from botocore.client import Config
 import logging
+import os
+from typing import Optional
+
+import boto3
+import requests
+from botocore.client import Config
+from bs4 import BeautifulSoup, FeatureNotFound
+from controller.db_controller import execute_query
+from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +32,10 @@ class ScraperMod:
         verification_code (str): The code to verify article authenticity.
     """
 
-    def __init__(self, article_url: str, verification_code: str):
+    def __init__(self, article_url: str, verification_code: str, promoter_id: str):
         self.article_url = article_url
         self.verification_code = verification_code
+        self.promoter_id = promoter_id
         self.session = self._create_session()
 
     def _create_session(self) -> requests.Session:
@@ -86,6 +89,25 @@ class ScraperMod:
                 f"An unexpected error occurred while fetching {url}: {e}")
             return None
 
+    def website_status(self, website_id: str, cursor) -> bool:
+        """
+        Checks if the website with the given ID is active.
+        Args:
+            website_id (str): The ID of the website to check.
+            cursor: Database cursor to execute the query.
+        Returns:
+            bool: True if the website is active, False otherwise.
+        """
+        website_status, = execute_query(
+            cursor=cursor, query="SELECT status FROM websites WHERE website_id = %s", params=(website_id,), fetch=True)
+
+        if website_status == "active":
+            logger.info(f"Website ID {website_id} is active.")
+            return True
+        else:
+            logger.info(f"Website ID {website_id} is not active.")
+            return False
+
     def has_credx_verification(self, soup: Optional[BeautifulSoup]) -> bool:
         """
         Checks for the presence of a 'credx-verification' meta tag.
@@ -107,6 +129,31 @@ class ScraperMod:
 
         logger.info("Article verification succeeded.")
         return meta is not None
+
+    def check_budget(self, entered_budget: float, cursor) -> bool:
+        """
+        Checks if the entered budget is sufficient for promotion.
+
+        Args:
+            entered_budget (float): The budget allocated for article.
+        Returns:
+            bool: True if budget is sufficient, False otherwise.
+        """
+        entered_budget = float(entered_budget)
+        wallet_balance, = execute_query(
+            cursor=cursor,
+            query="SELECT balance FROM wallets WHERE user_id = %s",
+            params=(self.promoter_id,), fetch=True)
+        if wallet_balance is None:
+            logger.error(
+                f"No wallet found for promoter ID: {self.promoter_id}")
+            return False
+        if wallet_balance >= entered_budget:
+            logger.info("Sufficient budget available.")
+            return True
+        else:
+            logger.warning("Insufficient budget.")
+            return False
 
     def scrape_and_clean_article(self, soup: Optional[BeautifulSoup]) -> str:
         """

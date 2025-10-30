@@ -1,8 +1,8 @@
-# utils.py
-from sentence_transformers import SentenceTransformer
-import numpy as np
-from sklearn.preprocessing import normalize
 import os
+
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.preprocessing import normalize
 
 EMBED_MODEL = "sentence-t5-base"
 # EMBED_MODEL = "all-MiniLM-L6-v2"

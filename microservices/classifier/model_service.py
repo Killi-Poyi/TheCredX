@@ -31,14 +31,15 @@ Thread Safety:
 - Model updating is protected by a threading lock (_lock) to ensure atomic updates.
 
 """
-import joblib
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from classifier.utils import embed_texts
-import threading
-from sklearn.linear_model import SGDClassifier
 import logging
 import os
+import threading
+
+import joblib
+import numpy as np
+from classifier.utils import embed_texts
+from sentence_transformers import SentenceTransformer
+from sklearn.linear_model import SGDClassifier
 
 MICROSERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FILE_PATH = os.path.join(MICROSERVICE_DIR, "model_bundle.pkl")

@@ -4,17 +4,18 @@ The trained model bundle is saved in the classifier microservice folder for cons
 """
 
 
-import pandas as pd
-import numpy as np
-import joblib
-from sklearn.linear_model import SGDClassifier
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-from sklearn.utils import shuffle
-from classifier.utils import embed_texts, EMBED_MODEL
-from sentence_transformers import SentenceTransformer
 import os
+
+import joblib
+import numpy as np
+import pandas as pd
+from classifier.utils import EMBED_MODEL, embed_texts
+from sentence_transformers import SentenceTransformer
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 MICROSERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_OUT = os.path.join(MICROSERVICE_DIR, "model_bundle.pkl")

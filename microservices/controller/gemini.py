@@ -18,11 +18,11 @@ Example:
     summary = generate_text(client, prompt="Your prompt here")
 """
 
-from google import genai
 import os
-from dotenv import load_dotenv
-from google.genai import types
 
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 # Load environment variables from .env
 load_dotenv()

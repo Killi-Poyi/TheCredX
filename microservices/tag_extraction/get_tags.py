@@ -1,11 +1,11 @@
-# tag_extractor.py
-import re
-import nltk
+import logging
 import os
-from sklearn.feature_extraction.text import TfidfVectorizer
+import re
+
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-import logging
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 logger = logging.getLogger(__name__)
 
